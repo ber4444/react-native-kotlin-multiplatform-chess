@@ -9,6 +9,8 @@ Rebuilt from [compose-multiplatform-chess](https://github.com/ber4444/compose-mu
 the Compose UI is replaced by React Native components, the four original 3D renderers collapse to
 two, and the chess engine/rules/scene-math stay Kotlin (no logic reimplemented in JS/TS).
 
+[Medium article](https://medium.com/@gabor.berenyi.california/building-a-3d-game-in-react-native-kotlin-multiplatform-526b3c2ddb6a)
+
 ## Why this design
 
 - **One shell, five platforms.** iOS + Android run React Native natively (New Architecture /
