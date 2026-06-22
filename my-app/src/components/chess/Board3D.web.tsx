@@ -7,11 +7,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import type { ChessSession, ChessSnapshot } from '@/chess-core';
+import type { CameraView, ChessSession, ChessSnapshot } from '@/chess-core';
 
 import { ChessLoader } from './ChessLoader';
 import { createBoardRenderer } from './board-renderer/createBoardRenderer.web';
 import type { BoardRenderer } from './board-renderer/BoardRenderer';
+import { pickWebSquare } from './webPiecePicker';
 
 interface Board3DProps {
   session: ChessSession;
@@ -21,15 +22,37 @@ interface Board3DProps {
 
 const CONTAINER_ID = 'chess-3d-canvas-host';
 
+// three.js PerspectiveCamera.fov is VERTICAL. The Kotlin core reports the landscape
+// vertical fov (50°); in portrait (aspect < 1) BoardRayPicker widens it to hold a fixed
+// ~60° HORIZONTAL fov, so the renderer must project with that same widened vertical fov or
+// taps land off in portrait. Landscape is unchanged. Mirrors the native Filament path.
+function projectionCamera(session: ChessSession): CameraView {
+  const c = session.currentCamera();
+  if (c.aspect >= 1) return c;
+  const fov = (2 * Math.atan(Math.tan((60 * Math.PI / 180) / 2) / c.aspect)) * (180 / Math.PI);
+  return {
+    px: c.px, py: c.py, pz: c.pz, tx: c.tx, ty: c.ty, tz: c.tz,
+    ux: c.ux, uy: c.uy, uz: c.uz, fov, aspect: c.aspect,
+  };
+}
+
 function pushSceneAndCamera(renderer: BoardRenderer, session: ChessSession) {
   renderer.setScene(session.currentScene());
-  renderer.setCamera(session.currentCamera());
+  renderer.setCamera(projectionCamera(session));
 }
 
 export function Board3D({ session, snapshot, onSquareTapped }: Board3DProps) {
   const [ready, setReady] = useState(false);
   const readyRef = useRef(false);
   const rendererRef = useRef<BoardRenderer | null>(null);
+
+  // The DOM gesture listeners live for the renderer's full lifetime, while the
+  // parent replaces this callback whenever the chess snapshot changes. Keep the
+  // subscription stable and dispatch taps to the latest move-state callback.
+  const onSquareTappedRef = useRef(onSquareTapped);
+  useEffect(() => {
+    onSquareTappedRef.current = onSquareTapped;
+  }, [onSquareTapped]);
 
   useEffect(() => {
     let disposed = false;
@@ -46,7 +69,12 @@ export function Board3D({ session, snapshot, onSquareTapped }: Board3DProps) {
       renderer.resize(Math.max(1, Math.round(rect.width)), Math.max(1, Math.round(rect.height)));
       session.cameraResize(rect.width / Math.max(1, rect.height));
       pushSceneAndCamera(renderer, session);
-      detachGestures = attachGestureHandlers(host, session, onSquareTapped, renderer);
+      detachGestures = attachGestureHandlers(
+        host,
+        session,
+        (row, col) => onSquareTappedRef.current(row, col),
+        renderer,
+      );
       readyRef.current = true;
       setReady(true);
     });
@@ -128,7 +156,7 @@ function attachGestureHandlers(
       const rect = host.getBoundingClientRect();
       const xNorm = (e.clientX - rect.left) / rect.width;
       const yNorm = (e.clientY - rect.top) / rect.height;
-      const idx = session.pickSquareFromRay(xNorm, yNorm);
+      const idx = pickWebSquare(session, xNorm, yNorm);
       if (idx >= 0 && idx < 64) {
         onSquareTapped(Math.floor(idx / 8), idx % 8);
         pushSceneAndCamera(renderer, session);

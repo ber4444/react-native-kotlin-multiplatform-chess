@@ -49,6 +49,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "test:web-picker": "node --experimental-strip-types --test tests/web-piece-picker.test.mjs",
     "build:core": "cd ../chess-core && ./gradlew copyJsToApp --no-daemon",
     "prepare:assets": "node ./scripts/convert-chess-pieces.js && node ./scripts/prepare-3d-renderer.js",
     "build:web": "expo export -p web --output-dir dist-web",
