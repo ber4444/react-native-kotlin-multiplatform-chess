@@ -1,0 +1,18 @@
+# Monorepo root ignores. Per-app ignores live in my-app/.gitignore.
+
+# macOS
+.DS_Store
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# ── chess-core (Kotlin/JS, Gradle) ──────────────────────────────────────────
+chess-core/build/
+chess-core/.gradle/
+chess-core/.kotlin/
+# kotlin-js-store/ (yarn.lock for the JS toolchain) IS committed for reproducible builds.
+
+# Node (in case anything is installed at the root)
+node_modules/
