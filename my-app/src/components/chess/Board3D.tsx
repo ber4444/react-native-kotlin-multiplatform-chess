@@ -61,8 +61,25 @@ const IBL_KTX = require('../../../assets/3d/papermill_ibl.ktx');
 /* eslint-enable @typescript-eslint/no-var-requires */
 
 const DEG_TO_RAD = Math.PI / 180;
-// Tuned for full-screen portrait/landscape (view aspect, not square). Lower = wider.
-const FOCAL_LENGTH_MM = 15;
+// ── Camera FOV: keep Filament's projection identical to the one BoardRayPicker inverts ──
+// Filament's <Camera> only accepts a focal length; it projects a FIXED VERTICAL fov from
+// it using a 35mm full-frame sensor (24mm tall, half = 12mm): vFOV = 2·atan(12 / focalMm).
+// The Kotlin picker (Math3D.effectiveFovYRad) instead holds a fixed ~60° HORIZONTAL fov in
+// portrait (vertical derived from aspect) and a fixed 50° VERTICAL fov in landscape. If the
+// two disagree, taps resolve to the wrong square. The web path gets this for free (three.js
+// consumes currentCamera().fov); here we derive the focal length that reproduces the picker's
+// vertical fov at the live aspect so render and picking agree (verified: empty-square taps
+// 4/8 → 8/8 against the compiled picker once aspect + fov match).
+const FILAMENT_SENSOR_HALF_MM = 12;
+const PICKER_FOV_X_DEG = 60; // portrait: fixed horizontal fov
+const PICKER_FOV_Y_DEG = 50; // landscape: fixed vertical fov (OrbitCameraController.FOV_Y_DEG)
+function filamentFocalLength(aspect: number): number {
+  const fovYRad =
+    aspect < 1
+      ? 2 * Math.atan(Math.tan((PICKER_FOV_X_DEG * DEG_TO_RAD) / 2) / aspect)
+      : PICKER_FOV_Y_DEG * DEG_TO_RAD;
+  return FILAMENT_SENSOR_HALF_MM / Math.tan(fovYRad / 2);
+}
 const PIECE_SCALE = 0.5;
 // Unused pool slots (captured pieces / promotion headroom) are parked far below
 // the board instead of being unmounted — the instanced asset has a fixed count.
@@ -119,6 +136,18 @@ function catmullRomArc(
   ];
 }
 
+// ── Selection bounce (mirrors Math3D.selectionBounceOffset / SELECTION_BOUNCE_* in the
+// Kotlin core, evaluated in JS like the move arc above). Selection feedback is the piece
+// springing up off the board on a |sin| curve — NOT a highlight disc. It plays only while
+// the piece is resting+selected; a moving piece (and a move's target) never bounces.
+const SELECTION_BOUNCE_HEIGHT = 0.16;
+const SELECTION_BOUNCE_PERIOD_MS = 520;
+
+function selectionBounceOffset(elapsedMs: number): number {
+  const phase = (elapsedMs % SELECTION_BOUNCE_PERIOD_MS) / SELECTION_BOUNCE_PERIOD_MS;
+  return SELECTION_BOUNCE_HEIGHT * Math.abs(Math.sin(phase * Math.PI));
+}
+
 interface Board3DProps {
   session: ChessSession;
   snapshot: ChessSnapshot;
@@ -140,6 +169,7 @@ function buildSlots(
   pieces: PieceInstanceDto[],
   moving: { pos: [number, number, number]; row: number; col: number } | null,
   secondary: { pos: [number, number, number]; row: number; col: number } | null,
+  selection: { row: number; col: number; dy: number } | null,
 ): Record<string, (SlotTransform | null)[]> {
   const out: Record<string, (SlotTransform | null)[]> = {};
   for (const key of PIECE_KEYS) out[key] = new Array(POOL_SIZES[key]).fill(null);
@@ -156,6 +186,9 @@ function buildSlots(
       [x, y, z] = moving.pos;
     } else if (secondary && p.row === secondary.row && p.col === secondary.col) {
       [x, y, z] = secondary.pos;
+    } else if (selection && p.row === selection.row && p.col === selection.col) {
+      // Resting selected piece bounces in place (never the moving piece — handled above).
+      y = y + selection.dy;
     }
     arr[i] = { x, y, z, rotY: p.rotationYDegrees };
   }
@@ -210,6 +243,15 @@ function PiecePool({
 export function Board3D({ session, snapshot, onSquareTapped }: Board3DProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
+  // Sync the Kotlin camera's aspect with the actual full-screen viewport so the
+  // BoardRayPicker inverts the projection that is really on screen. Native never did
+  // this (only the web path does — Board3D.web.tsx), so the picker stayed at its default
+  // square (aspect = 1) projection while Filament rendered portrait/landscape, and taps
+  // landed up to a square off — you "couldn't make moves". Re-runs on rotation.
+  useEffect(() => {
+    session.cameraResize(screenWidth / screenHeight);
+  }, [session, screenWidth, screenHeight]);
+
   // Scene pieces — re-derived only when the game state changes (NOT on camera moves
   // or animation frames). currentScene() crosses into Kotlin/JS, so keep it per-move.
   const scenePieces = useMemo(
@@ -225,6 +267,12 @@ export function Board3D({ session, snapshot, onSquareTapped }: Board3DProps) {
   // position with the interpolated arc). Secondary (castling rook) animates in parallel.
   const [animPos, setAnimPos] = useState<[number, number, number] | null>(null);
   const [animSecondaryPos, setAnimSecondaryPos] = useState<[number, number, number] | null>(null);
+
+  // ── Selection bounce: while a piece is selected AND resting (not mid-move), hop it in
+  // place via selectionBounceOffset. Gated on `!animating` so the piece doesn't bounce
+  // while arcing, and selection clears on move (deriveNewGameState) so the move's target
+  // never bounces — matching the Kotlin Board3DAnimationDriver (golden Android target).
+  const [bounceY, setBounceY] = useState(0);
 
   useEffect(() => {
     if (!snapshot.animating) {
@@ -273,7 +321,23 @@ export function Board3D({ session, snapshot, onSquareTapped }: Board3DProps) {
     snapshot.animSecondaryToCol,
   ]);
 
-  // Per-pool absolute transforms, including the in-flight arc override.
+  useEffect(() => {
+    if (!snapshot.hasSelection || snapshot.animating) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setBounceY(0);
+      return;
+    }
+    const start = Date.now();
+    let raf = 0;
+    const tick = () => {
+      setBounceY(selectionBounceOffset(Date.now() - start));
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [snapshot.hasSelection, snapshot.selectedRow, snapshot.selectedCol, snapshot.animating]);
+
+  // Per-pool absolute transforms, including the in-flight arc override + selection bounce.
   const slotMap = useMemo(() => {
     const moving = animPos
       ? { pos: animPos, row: snapshot.animToRow, col: snapshot.animToCol }
@@ -281,7 +345,10 @@ export function Board3D({ session, snapshot, onSquareTapped }: Board3DProps) {
     const secondary = animSecondaryPos && snapshot.animSecondary
       ? { pos: animSecondaryPos, row: snapshot.animSecondaryToRow, col: snapshot.animSecondaryToCol }
       : null;
-    return buildSlots(scenePieces, moving, secondary);
+    const selection = snapshot.hasSelection && !snapshot.animating
+      ? { row: snapshot.selectedRow, col: snapshot.selectedCol, dy: bounceY }
+      : null;
+    return buildSlots(scenePieces, moving, secondary, selection);
   }, [
     scenePieces,
     animPos,
@@ -291,6 +358,11 @@ export function Board3D({ session, snapshot, onSquareTapped }: Board3DProps) {
     snapshot.animSecondary,
     snapshot.animSecondaryToRow,
     snapshot.animSecondaryToCol,
+    snapshot.hasSelection,
+    snapshot.animating,
+    snapshot.selectedRow,
+    snapshot.selectedCol,
+    bounceY,
   ]);
 
   // Refs track gesture progress across event callbacks (event handlers, not render).
@@ -365,7 +437,8 @@ export function Board3D({ session, snapshot, onSquareTapped }: Board3DProps) {
               cameraPosition={[cam.px, cam.py, cam.pz]}
               cameraTarget={[cam.tx, cam.ty, cam.tz]}
               cameraUp={[cam.ux, cam.uy, cam.uz]}
-              focalLengthInMillimeters={FOCAL_LENGTH_MM}
+              focalLengthInMillimeters={filamentFocalLength(screenWidth / screenHeight)}
+              aspect={screenWidth / screenHeight}
               near={0.1}
               far={100}
             />

@@ -1,8 +1,11 @@
 // Splits chess.glb into board.glb + 12 per-piece-type-color glbs for RN Filament
 // instancing. RN Filament's <ModelInstance> instances the whole model and shares
 // one material across instances, so we bake the colour (white/black) into separate
-// glbs: king_white.glb, king_black.glb, etc. The board (tiles + frame + Plane) is
-// its own glb with the 6 piece templates removed.
+// glbs: king_white.glb, king_black.glb, etc. The board (tiles + frame) is its own
+// glb with the 6 piece templates AND the stray "Plane" removed. "Plane" is a
+// leftover shadow-catcher quad that the IBL-only lighting doesn't need; left in, it
+// renders as a square outside the board on Filament (the three.js renderer hides the
+// same node by name — see HIDDEN_NODES in chess3d-renderer.generated.js).
 //
 // Run: node scripts/split-chess-glb.js
 // Source: assets/3d/chess.glb  →  Output: assets/3d/split/*.glb
@@ -17,8 +20,8 @@ const OUT_DIR = path.resolve(__dirname, '../assets/3d/split');
 
 const PIECES = ['king', 'queen', 'rook', 'bishop', 'knight', 'pawn'];
 const COLORS = ['white', 'black'];
-// Board keeps everything that isn't a piece template.
-const BOARD_EXCLUDE = new Set([...PIECES]);
+// Board keeps everything that isn't a piece template or the stray "Plane" quad.
+const BOARD_EXCLUDE = new Set([...PIECES, 'Plane']);
 
 const io = new NodeIO();
 

@@ -25,6 +25,67 @@ two, and the chess engine/rules/scene-math stay Kotlin (no logic reimplemented i
 
 ## Architecture
 
+### System diagram
+
+A single Kotlin core drives every platform. It compiles to a JS bundle that the React Native app
+consumes; the same renderer-agnostic `Board3DScene` feeds two renderers; and a per-platform Stockfish
+(or the Kotlin CPU fallback) closes the opponent-move loop back into the session.
+
+```mermaid
+flowchart TB
+    subgraph CORE["chess-core — Kotlin KMP · commonMain (all game logic)"]
+        direction TB
+        LOGIC["Chess engine<br/>rules · FEN · UCI · draw detection"]
+        SCENE["board3d/ — renderer-agnostic scene<br/>Board3DScene · OrbitCameraController · BoardRayPicker"]
+        CPU["pickMoveCPU<br/>(fallback opponent)"]
+        FACADE["ChessSession.kt — @JsExport facade<br/>subscribe · playerMove · currentScene"]
+        LOGIC --> FACADE
+        SCENE --> FACADE
+        CPU --> FACADE
+    end
+
+    FACADE ==>|"compiled to Kotlin/JS (IR) bundle"| GATEWAY
+
+    subgraph APP["my-app — React Native · Expo SDK 56 · Fabric (JS runtime)"]
+        direction TB
+        GATEWAY["src/chess-core/<br/>TS gateway to Kotlin/JS"]
+        HOOK["hooks/useChessSession<br/>subscribe · attach platform engine"]
+        UI2D["components/chess/<br/>2D board (react-native-svg) · dialogs · 2D⇄3D toggle"]
+        GATEWAY --> HOOK
+        HOOK --> UI2D
+    end
+
+    HOOK --> B3D["Board3D.tsx<br/>RN Filament (native)"]
+    HOOK --> B3DW["Board3D.web.tsx<br/>three.js · window.chess3d"]
+
+    B3D --> IOS["iOS<br/>Metal"]
+    B3D --> AND["Android<br/>Vulkan / GLES"]
+    B3DW --> WEB["Web<br/>WebGL"]
+    B3DW --> ELE["Desktop · Electron<br/>Chromium WebGL"]
+
+    IOS -. "ChessKit *" .-> ENG
+    AND -. "libstockfish.so" .-> ENG
+    WEB -. "stockfish.wasm *" .-> ENG
+    ELE -. "system stockfish (child_process)" .-> ENG
+    ENG["Stockfish / CPU opponent"] -. "best move (UCI)" .-> FACADE
+
+    classDef core fill:#ede7f6,stroke:#5e35b1,color:#311b92;
+    classDef app fill:#e3f2fd,stroke:#1976d2,color:#0d47a1;
+    classDef rend fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+    classDef plat fill:#eceff1,stroke:#546e7a,color:#263238;
+    classDef eng fill:#fff8e1,stroke:#f9a825,color:#e65100;
+    class LOGIC,SCENE,CPU,FACADE core;
+    class GATEWAY,HOOK,UI2D app;
+    class B3D,B3DW rend;
+    class IOS,AND,WEB,ELE plat;
+    class ENG eng;
+```
+
+> `*` = planned native engine; CPU fallback runs today. See the
+> [Stockfish per platform](#stockfish-per-platform) table below for details.
+
+### Directory layout
+
 ```
 .
 ├── chess-core/                    # Kotlin KMP library → Kotlin/JS (IR)
@@ -147,6 +208,5 @@ generators:
 
 ## License
 
-This is a port of [compose-multiplatform-chess](https://github.com/ber4444/compose-multiplatform-chess),
-which is licensed **GPL-3.0**. (Note: `my-app/LICENSE` is the leftover Expo starter MIT template and
-should be reconciled with the intended project license.)
+This project is licensed **GPL-3.0** — see [`LICENSE`](LICENSE). It is a port of
+[compose-multiplatform-chess](https://github.com/ber4444/compose-multiplatform-chess), which is GPL-3.0 too. 

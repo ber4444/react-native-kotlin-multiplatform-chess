@@ -31,7 +31,7 @@ type WidthClass = 'Compact' | 'Medium' | 'Expanded';
 function widthClass(width: number): WidthClass {
   // ChessApp.kt breakpoints: <600 Compact, <840 Medium, else Expanded.
   if (width < 600) return 'Compact';
-  if (width < 840) return 'Expanded';
+  if (width < 840) return 'Medium';
   return 'Expanded';
 }
 
