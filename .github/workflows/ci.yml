@@ -102,13 +102,13 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: my-app/package-lock.json
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest
       - name: Install Node dependencies
         working-directory: my-app
         run: npm ci
-      - name: Patch Expo Modules swift-tools-version
-        working-directory: my-app
-        run: |
-          find node_modules -name "Package.swift" -exec sed -i '' 's/swift-tools-version: 6.2/swift-tools-version: 6.0/g' {} +
       - name: Download chess-core JS
         uses: actions/download-artifact@v4
         with:
