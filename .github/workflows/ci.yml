@@ -107,7 +107,8 @@ jobs:
         run: npm ci
       - name: Patch Expo Modules swift-tools-version
         working-directory: my-app
-        run: find node_modules -name "Package.swift" -exec sed -i '' 's/swift-tools-version: 6.2/swift-tools-version: 6.0/g' {} +
+        run: |
+          find node_modules -name "Package.swift" -exec sed -i '' 's/swift-tools-version: 6.2/swift-tools-version: 6.0/g' {} +
       - name: Download chess-core JS
         uses: actions/download-artifact@v4
         with:
