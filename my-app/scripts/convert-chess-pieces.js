@@ -13,8 +13,8 @@ const fs = require('fs');
 const path = require('path');
 
 const DRAWABLE_DIR = path.resolve(
-  __dirname,
-  '../../../compose-multiplatform-chess/app/src/commonMain/composeResources/drawable',
+  process.env.COMPOSE_CHESS_PATH || path.resolve(__dirname, '../../../compose-multiplatform-chess'),
+  'app/src/commonMain/composeResources/drawable',
 );
 const OUT_FILE = path.resolve(__dirname, '../src/components/chess/piece-paths.generated.ts');
 

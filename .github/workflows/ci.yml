@@ -17,9 +17,16 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: gradle
       - name: Build Kotlin/JS + run commonTest
         working-directory: chess-core
         run: ./gradlew jsNodeTest copyJsToApp --no-daemon
+      - name: Upload chess-core JS
+        uses: actions/upload-artifact@v4
+        with:
+          name: chess-core-js
+          path: my-app/src/generated/chess-core
+          include-hidden-files: true
 
   # ── RN app: typecheck + lint + web build ─────────────────────────────────────
   app-web:
@@ -33,24 +40,24 @@ jobs:
           node-version: '20'
           cache: npm
           cache-dependency-path: my-app/package-lock.json
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
       - name: Install dependencies
         working-directory: my-app
         run: npm ci
-      - name: Build chess-core JS (prerequisite)
-        working-directory: chess-core
-        run: ./gradlew copyJsToApp --no-daemon
+      - name: Download chess-core JS
+        uses: actions/download-artifact@v4
+        with:
+          name: chess-core-js
+          path: my-app/src/generated/chess-core
       - name: Checkout compose-multiplatform-chess for assets
         uses: actions/checkout@v4
         with:
           repository: ber4444/compose-multiplatform-chess
-          path: ../compose-multiplatform-chess
+          path: compose-multiplatform-chess
       - name: Generate 3D assets (split glb + piece paths)
         working-directory: my-app
         run: npm run prepare:assets
+        env:
+          COMPOSE_CHESS_PATH: ${{ github.workspace }}/compose-multiplatform-chess
       - name: Typecheck
         working-directory: my-app
         run: npm run typecheck
@@ -93,24 +100,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
+          cache: npm
+          cache-dependency-path: my-app/package-lock.json
       - name: Install Node dependencies
         working-directory: my-app
         run: npm ci
-      - name: Build chess-core JS
-        working-directory: chess-core
-        run: ./gradlew copyJsToApp --no-daemon
+      - name: Download chess-core JS
+        uses: actions/download-artifact@v4
+        with:
+          name: chess-core-js
+          path: my-app/src/generated/chess-core
       - name: Checkout compose-multiplatform-chess for assets
         uses: actions/checkout@v4
         with:
           repository: ber4444/compose-multiplatform-chess
-          path: ../compose-multiplatform-chess
+          path: compose-multiplatform-chess
       - name: Generate 3D assets
         working-directory: my-app
         run: npm run prepare:assets
+        env:
+          COMPOSE_CHESS_PATH: ${{ github.workspace }}/compose-multiplatform-chess
       - name: Cache CocoaPods
         id: pod-cache
         uses: actions/cache@v4
@@ -144,24 +153,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
+          cache-dependency-path: my-app/package-lock.json
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
+          cache: gradle
       - name: Install Node dependencies
         working-directory: my-app
         run: npm ci
-      - name: Build chess-core JS
-        working-directory: chess-core
-        run: ./gradlew copyJsToApp --no-daemon
+      - name: Download chess-core JS
+        uses: actions/download-artifact@v4
+        with:
+          name: chess-core-js
+          path: my-app/src/generated/chess-core
       - name: Checkout compose-multiplatform-chess for assets
         uses: actions/checkout@v4
         with:
           repository: ber4444/compose-multiplatform-chess
-          path: ../compose-multiplatform-chess
+          path: compose-multiplatform-chess
       - name: Generate 3D assets
         working-directory: my-app
         run: npm run prepare:assets
+        env:
+          COMPOSE_CHESS_PATH: ${{ github.workspace }}/compose-multiplatform-chess
       - name: assembleDebug
         working-directory: my-app/android
         run: ./gradlew assembleDebug --no-daemon

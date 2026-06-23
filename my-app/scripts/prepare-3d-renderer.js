@@ -12,8 +12,8 @@ const fs = require('fs');
 const path = require('path');
 
 const SOURCE = path.resolve(
-  __dirname,
-  '../../../compose-multiplatform-chess/tools/chess3d-renderer/chess3d-renderer.js',
+  process.env.COMPOSE_CHESS_PATH || path.resolve(__dirname, '../../../compose-multiplatform-chess'),
+  'tools/chess3d-renderer/chess3d-renderer.js',
 );
 const OUT_DIR = path.resolve(__dirname, '../src/components/chess/three-renderer');
 const OUT_FILE = path.join(OUT_DIR, 'chess3d-renderer.generated.js');
