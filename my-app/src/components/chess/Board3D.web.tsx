@@ -12,8 +12,6 @@ import type { CameraView, ChessSession, ChessSnapshot } from '@/chess-core';
 import { ChessLoader } from './ChessLoader';
 import { createBoardRenderer } from './board-renderer/createBoardRenderer.web';
 import type { BoardRenderer } from './board-renderer/BoardRenderer';
-import { pickWebSquare } from './webPiecePicker';
-
 interface Board3DProps {
   session: ChessSession;
   snapshot: ChessSnapshot;
@@ -156,7 +154,7 @@ function attachGestureHandlers(
       const rect = host.getBoundingClientRect();
       const xNorm = (e.clientX - rect.left) / rect.width;
       const yNorm = (e.clientY - rect.top) / rect.height;
-      const idx = pickWebSquare(session, xNorm, yNorm);
+      const idx = session.pickSquareFromRay(xNorm, yNorm);
       if (idx >= 0 && idx < 64) {
         onSquareTapped(Math.floor(idx / 8), idx % 8);
         pushSceneAndCamera(renderer, session);
