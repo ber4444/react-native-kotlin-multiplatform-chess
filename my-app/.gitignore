@@ -42,9 +42,8 @@ example
 # Generated from chess-core (Gradle js(IR) build output) — regenerate with npm run build:core.
 src/generated/chess-core/
 
-# Generated from the single-source-of-truth renderer / piece drawables.
+# Generated from the single-source-of-truth piece drawables.
 src/components/chess/piece-paths.generated.ts
-src/components/chess/three-renderer/chess3d-renderer.generated.js
 
 # Generated split glbs (from assets/3d/chess.glb via scripts/split-chess-glb.js).
 assets/3d/split/
