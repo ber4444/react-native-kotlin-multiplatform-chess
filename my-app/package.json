@@ -51,7 +51,7 @@
     "typecheck": "tsc --noEmit",
     "test:web-picker": "node --experimental-strip-types --test tests/web-piece-picker.test.mjs",
     "build:core": "cd ../chess-core && ./gradlew copyJsToApp --no-daemon",
-    "prepare:assets": "node ./scripts/convert-chess-pieces.js",
+    "prepare:assets": "node ./scripts/convert-chess-pieces.js && node ./scripts/split-chess-glb.js",
     "build:web": "expo export -p web --output-dir dist-web",
     "build:desktop": "expo export -p web --output-dir dist-web && electron electron/main.cjs",
     "desktop": "electron electron/main.cjs"
