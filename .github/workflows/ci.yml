@@ -183,4 +183,4 @@ jobs:
           COMPOSE_CHESS_PATH: ${{ github.workspace }}/compose-multiplatform-chess
       - name: assembleDebug
         working-directory: my-app/android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon -PreactNativeArchitectures=arm64-v8a
