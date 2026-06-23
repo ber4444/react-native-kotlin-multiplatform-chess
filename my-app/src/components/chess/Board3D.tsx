@@ -40,7 +40,7 @@ import {
 
 import type { ChessSession, ChessSnapshot, PieceInstanceDto, CameraView } from '@/chess-core';
 
-/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-require-imports */
 const BOARD_GLB = require('../../../assets/3d/split/board.glb');
 const PIECE_GLBS: Record<string, number> = {
   '0_0': require('../../../assets/3d/split/king_white.glb'),
@@ -58,7 +58,7 @@ const PIECE_GLBS: Record<string, number> = {
 };
 const SKYBOX_KTX = require('../../../assets/3d/papermill_skybox.ktx');
 const IBL_KTX = require('../../../assets/3d/papermill_ibl.ktx');
-/* eslint-enable @typescript-eslint/no-var-requires */
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 const DEG_TO_RAD = Math.PI / 180;
 // ── Camera FOV: keep Filament's projection identical to the one BoardRayPicker inverts ──
