@@ -132,7 +132,6 @@ jobs:
           key: ${{ runner.os }}-pods-${{ hashFiles('my-app/ios/Podfile.lock') }}
           restore-keys: ${{ runner.os }}-pods-
       - name: CocoaPods install
-        if: steps.pod-cache.outputs.cache-hit != 'true'
         working-directory: my-app/ios
         run: pod install
       - name: xcodebuild (no signing)
