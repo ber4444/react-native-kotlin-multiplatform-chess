@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: my-app/package-lock.json
       - name: Install dependencies
@@ -77,7 +77,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: my-app/package-lock.json
       - name: Install dependencies
@@ -99,12 +99,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: my-app/package-lock.json
       - name: Install Node dependencies
         working-directory: my-app
         run: npm ci
+      - name: Patch Expo Modules swift-tools-version
+        working-directory: my-app
+        run: find node_modules -name "Package.swift" -exec sed -i '' 's/swift-tools-version: 6.2/swift-tools-version: 6.0/g' {} +
       - name: Download chess-core JS
         uses: actions/download-artifact@v4
         with:
@@ -152,7 +155,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: my-app/package-lock.json
       - uses: actions/setup-java@v4
