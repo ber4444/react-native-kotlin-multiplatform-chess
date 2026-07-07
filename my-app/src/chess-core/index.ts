@@ -1,134 +1,79 @@
 // Typed gateway to the Kotlin/JS chess-core library.
 //
-// The Kotlin/JS `@JsExport` facade lives under the `com.example.myapplication`
-// namespace (package-qualified export). This module loads the UMD bundle that
-// Gradle copies into `src/generated/chess-core/`, navigates to that namespace,
-// and re-exports the `ChessSession` constructor + DTO types so the rest of the
-// app imports fully-typed chess primitives from `@/chess-core`.
+// The Kotlin/JS `@JsExport` facade (ChessSession + its DTOs) lives under the
+// `com.example.myapplication` namespace. The `.d.ts` TypeScript declarations for it are GENERATED
+// from the Kotlin source by KGP's `generateTypeScriptDefinitions()` (see chess-core/build.gradle.kts)
+// and copied here by Gradle's `copyJsToApp` task → `src/generated/chess-core/chess-core.d.ts`.
+//
+// This file is now a THIN re-export layer: it loads the JS module, surfaces the `ChessSession`
+// constructor as a value, and re-exports the generated types so the rest of the app imports
+// fully-typed chess primitives from `@/chess-core`. When the Kotlin API changes, the `.d.ts`
+// regenerates on the next `npm run build:core` — no hand-maintained types to keep in sync.
 //
 // Rebuild the bundle with `npm run build:core` (runs the Gradle `copyJsToApp` task).
 
-// @ts-ignore — Kotlin/JS UMD output ships without TypeScript declarations.
+// The generated JS module. Its `.d.ts` ships the types under `com.example.myapplication`.
 import coreModule from '@/generated/chess-core/chess-core.js';
+// The generated TypeScript declarations (chess-core.d.ts next to the .js). Importing the `com`
+// namespace type directly lets us reference both classes AND interfaces under it — `typeof` on a
+// namespace only sees value members (class constructor sides), which hides interfaces.
+import type { com } from '@/generated/chess-core/chess-core';
 
-const ns = (coreModule as { com: { example: { myapplication: any } } })
-  .com.example.myapplication;
+/** The Kotlin package namespace the @JsExport declarations live under (constructor-value side). */
+const ns = (coreModule as unknown as {
+  'com': { 'example': { 'myapplication': typeof com.example.myapplication } },
+}).com.example.myapplication;
 
-/** A single piece on the board. `kind` ∈ KING|QUEEN|ROOK|BISHOP|KNIGHT|PAWN. */
-export interface PieceDto {
-  kind: string;
-  color: 'WHITE' | 'BLACK';
-  row: number;
-  col: number;
-}
-
-/** Camera params the three.js renderer projects with. */
-export interface CameraView {
-  px: number; py: number; pz: number;
-  tx: number; ty: number; tz: number;
-  ux: number; uy: number; uz: number;
-  fov: number;
-  aspect: number;
-}
-
-/** One piece in the 3D scene (plan §6). kind = PieceKind ordinal, color 0/1. */
-export interface PieceInstanceDto {
-  kind: number;   // 0=KING, 1=QUEEN, 2=ROOK, 3=BISHOP, 4=KNIGHT, 5=PAWN
-  color: number;  // 0=WHITE, 1=BLACK
-  row: number;
-  col: number;
-  x: number;
-  y: number;
-  z: number;
-  rotationYDegrees: number;
-}
+// Re-export every generated type under the names the app already imports. KGP emits each @JsExport
+// `class` as a TS class (constructor value + instance type) and `fun interface`s as TS interfaces;
+// referencing them through the namespace type gives the instance shape in both cases. The qualified
+// path must be written in full (a type alias of a namespace can't be re-used as a namespace).
+export type PieceDto = com.example.myapplication.PieceDto;
+export type CameraView = com.example.myapplication.CameraView;
+export type PieceInstanceDto = com.example.myapplication.PieceInstanceDto;
+export type SceneDto = com.example.myapplication.SceneDto;
+export type ChessSnapshot = com.example.myapplication.ChessSnapshot;
+export type ChessSession = com.example.myapplication.ChessSession;
+/**
+ * JS-side chess engine (e.g. a Stockfish worker bridge). Re-exported verbatim from the generated
+ * declarations so it matches `ChessSession.attachEngine`'s parameter type. KGP emits a Kotlin
+ * interface as a TS interface carrying an internal `__doNotUseOrImplementIt` marker symbol; don't
+ * construct one by hand — use [createJsChessEngine].
+ */
+export type JsChessEngine = com.example.myapplication.JsChessEngine;
 
 /**
- * The ONE scene model both renderers consume (plan §6). Filament iterates
- * `pieces` for its `<ModelInstance>` pool; three.js uses `currentSceneEncoded()`.
+ * Builds a [JsChessEngine] from a plain `getBestMove` function. The generated TS interface carries
+ * a Kotlin-internal marker symbol (`__doNotUseOrImplementIt`) that plain object literals can't
+ * satisfy; this factory casts it away so call sites stay clean. The runtime shape is identical —
+ * Kotlin only reads `getBestMove`.
  */
-export interface SceneDto {
-  pieces: PieceInstanceDto[];
-  sideToMove: number;   // 0=WHITE, 1=BLACK
-  selectedRow: number;
-  selectedCol: number;
-  hasSelection: boolean;
+export function createJsChessEngine(
+  getBestMove: (fen: string, thinkTimeMs: number) => Promise<string | null>,
+): JsChessEngine {
+  return { getBestMove } as unknown as JsChessEngine;
 }
 
-/** One legal-move target for the selected square (row, col pair). */
+// The `ChessSession` constructor (a value, not a type). Idiomatic TS declaration merge: the type
+// above is the instance shape, this const is the constructable value — exactly like a class.
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- intentional declaration merge
+export const ChessSession: { new (): ChessSession } = ns.ChessSession;
+
+// The DTO constructors. The generated types are TS classes (not structural interfaces), so a
+// consumer that needs to build a DTO instance (e.g. projecting a portrait-mode CameraView) must
+// call `new CameraView(...)` rather than pass a plain object literal. Export the constructors so
+// consumers don't reach into the namespace directly.
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- intentional declaration merge
+export const CameraView: typeof com.example.myapplication.CameraView = ns.CameraView;
+
+/** One legal-move target for the selected square (row, col pair). RN-side convenience view over
+ *  the flat `legalMoves` Int32Array on ChessSnapshot. */
 export interface LegalMove {
   row: number;
   col: number;
 }
 
-/** Immutable UI snapshot pushed from the Kotlin core on every state change. */
-export interface ChessSnapshot {
-  turn: 'WHITE' | 'BLACK';
-  winState: 'NONE' | 'WHITE' | 'BLACK' | 'DRAW' | 'STALEMATE';
-  piecesWhite: PieceDto[];
-  piecesBlack: PieceDto[];
-  selectedRow: number;
-  selectedCol: number;
-  hasSelection: boolean;
-  legalMoves: Int32Array | number[];
-  pendingPromotion: boolean;
-  drawOfferBy: 'WHITE' | 'BLACK' | null;
-  drawOfferDeclinedBy: 'WHITE' | 'BLACK' | null;
-  show3D: boolean;
-  board3DUnavailable: boolean;
-  moveButtonLock: boolean;
-  animating: boolean;
-  animKind: string;
-  animColor: 'WHITE' | 'BLACK' | '';
-  animFromRow: number;
-  animFromCol: number;
-  animToRow: number;
-  animToCol: number;
-  animSecondary: boolean;
-  animSecondaryKind: string;
-  animSecondaryFromRow: number;
-  animSecondaryFromCol: number;
-  animSecondaryToRow: number;
-  animSecondaryToCol: number;
-  fen: string;
-}
-
-/** JS-side chess engine (e.g. a Stockfish worker bridge). */
-export interface JsChessEngine {
-  getBestMove(fen: string, thinkTimeMs: number): Promise<string | null>;
-}
-
-/** The ChessSession facade from the Kotlin core. */
-export interface ChessSession {
-  subscribe(cb: (snapshot: ChessSnapshot) => void): () => void;
-  getSnapshot(): ChessSnapshot;
-  currentScene(): SceneDto;
-  currentSceneEncoded(): string;
-  currentCamera(): CameraView;
-  currentFen(): string;
-  selectSquare(row: number, col: number): void;
-  clearSelection(): void;
-  playerMove(fromRow: number, fromCol: number, toRow: number, toCol: number): void;
-  promote(typeOrdinal: number): void;
-  cancelPromotion(): void;
-  animationEnd(): void;
-  offerDraw(): void;
-  acceptDrawOffer(): void;
-  declineDrawOffer(): void;
-  resetGame(): void;
-  hideWindow(): void;
-  setShow3D(enabled: boolean): void;
-  markBoard3DUnavailable(): void;
-  cameraDrag(dx: number, dy: number): void;
-  cameraZoom(factor: number): void;
-  cameraResize(aspect: number): void;
-  pickSquareFromRay(xNorm: number, yNorm: number): number;
-  attachEngine(engine: JsChessEngine | null): void;
-  close(): void;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare -- intentional declaration merge: interface is the instance type, const is the constructor value (idiomatic TS, like a class).
-export const ChessSession: { new (): ChessSession } = ns.ChessSession;
+/** Flattens the snapshot's `legalMoves` Int32Array (`[r1,c1, r2,c2, …]`) into `{row, col}` pairs. */
 export function parseLegalMoves(snapshot: ChessSnapshot): LegalMove[] {
   const flat = snapshot.legalMoves as number[] | Int32Array;
   const moves: LegalMove[] = [];

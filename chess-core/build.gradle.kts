@@ -6,8 +6,13 @@
 //   - ChessSession.kt        — the @JsExport facade the RN app calls (subscribe/select/move/...).
 //   - JsChessEngineAdapter.kt — adapts a JS-Promise engine to the core's ChessEngine interface.
 //
-// No chess logic lives here. The Gradle `copyJsToApp` task drops the compiled JS library (the core
-// + these two interop files) into ../my-app/src/generated/chess-core for Metro to resolve.
+// No chess logic lives here. The Gradle `copyJsToApp` task drops the compiled JS library + the
+// generated TypeScript declarations into ../my-app/src/generated/chess-core for Metro to resolve.
+//
+// TypeScript declarations: `generateTypeScriptDefinitions()` (KGP, stable since Kotlin 1.8) walks
+// every @JsExport declaration in ChessSession.kt and emits a matching `.d.ts` next to the JS
+// bundle. The RN app consumes those generated types directly — there is no hand-maintained gateway
+// file to keep in sync when the Kotlin API changes.
 //
 // Auth: GitHub Packages requires a PAT with `read:packages` even for public packages. Provide
 // GITHUB_ACTOR + GITHUB_PACKAGES_TOKEN (or GITHUB_TOKEN) in the env, or gpr.user/gpr.key in
@@ -24,6 +29,11 @@ kotlin {
         nodejs()
         // Produce an importable JS library (ESM/UMD + package.json) consumed by the RN app.
         binaries.library()
+        // Emit TypeScript declarations (.d.ts) from @JsExport declarations in ChessSession.kt so the
+        // RN app gets fully-typed bindings straight from the Kotlin source — no hand-written gateway
+        // that can drift from the Kotlin API. KGP also validates the generated declarations compile
+        // against a pinned TypeScript (added as a devDependency in the generated package.json).
+        generateTypeScriptDefinitions()
     }
 
     sourceSets {
@@ -42,12 +52,14 @@ kotlin {
     }
 }
 
-// Copy the built JS library (the core + RN interop) into the RN app's source tree where Metro
-// resolves it. Run after `jsNodeProductionLibraryDistribution`. `npm run build:core` invokes this.
+// Copy the built JS library + generated TypeScript declarations into the RN app's source tree where
+// Metro resolves them. Run after `jsNodeProductionLibraryDistribution`. `npm run build:core` invokes
+// this. The .d.ts lands at ../my-app/src/generated/chess-core/chess-core.d.ts.
 val copyJsToApp by tasks.registering(Copy::class) {
-    description = "Copies the production JS library into ../my-app/src/generated/chess-core for Metro."
+    description = "Copies the production JS library + .d.ts into ../my-app/src/generated/chess-core for Metro."
     group = "build"
     from(layout.buildDirectory.dir("dist/js/productionLibrary"))
     into(rootProject.projectDir.resolve("../my-app/src/generated/chess-core"))
     dependsOn("jsNodeProductionLibraryDistribution")
 }
+

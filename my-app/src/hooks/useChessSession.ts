@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { NativeModules, Platform } from 'react-native';
 
-import { ChessSession, type ChessSnapshot, type JsChessEngine } from '@/chess-core';
+import { ChessSession, createJsChessEngine, type ChessSnapshot } from '@/chess-core';
 
 declare global {
   interface Window {
@@ -42,20 +42,14 @@ function attachPlatformEngine(session: ChessSession) {
   // Electron desktop — system stockfish via Node child_process (electron/main.cjs).
   if (typeof window !== 'undefined' && window.desktopBridge?.getBestMove) {
     const bridge = window.desktopBridge;
-    const engine: JsChessEngine = {
-      getBestMove: (fen, thinkTimeMs) => bridge.getBestMove(fen, thinkTimeMs),
-    };
-    session.attachEngine(engine);
+    session.attachEngine(createJsChessEngine((fen, thinkTimeMs) => bridge.getBestMove(fen, thinkTimeMs)));
     return;
   }
   // Android — libstockfish.so via the StockfishAndroid native module.
   if (Platform.OS === 'android') {
     const sf = NativeModules.StockfishAndroid as StockfishAndroidModule | undefined;
     if (sf?.getBestMove) {
-      const engine: JsChessEngine = {
-        getBestMove: (fen, thinkTimeMs) => sf.getBestMove(fen, thinkTimeMs),
-      };
-      session.attachEngine(engine);
+      session.attachEngine(createJsChessEngine((fen, thinkTimeMs) => sf.getBestMove!(fen, thinkTimeMs)));
     }
   }
   // iOS — ChessKit Stockfish native module would go here (P5 future work).
