@@ -7,7 +7,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import type { CameraView, ChessSession, ChessSnapshot } from '@/chess-core';
+import { CameraView } from '@/chess-core';
+import type { ChessSession, ChessSnapshot } from '@/chess-core';
 
 import { ChessLoader } from './ChessLoader';
 import { createBoardRenderer } from './board-renderer/createBoardRenderer.web';
@@ -28,10 +29,9 @@ function projectionCamera(session: ChessSession): CameraView {
   const c = session.currentCamera();
   if (c.aspect >= 1) return c;
   const fov = (2 * Math.atan(Math.tan((60 * Math.PI / 180) / 2) / c.aspect)) * (180 / Math.PI);
-  return {
-    px: c.px, py: c.py, pz: c.pz, tx: c.tx, ty: c.ty, tz: c.tz,
-    ux: c.ux, uy: c.uy, uz: c.uz, fov, aspect: c.aspect,
-  };
+  return new CameraView(
+    c.px, c.py, c.pz, c.tx, c.ty, c.tz, c.ux, c.uy, c.uz, fov, c.aspect,
+  );
 }
 
 function pushSceneAndCamera(renderer: BoardRenderer, session: ChessSession) {

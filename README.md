@@ -23,12 +23,15 @@ consumed here — there is **no duplicated Kotlin** between the two repos.
   and iOS lands on a real Metal renderer (not deprecated `expo-gl`/GL ES). Web reuses the existing
   three.js renderer. Both consume the **same** Kotlin `Board3DScene`, so chess logic never knows
   which engine is underneath.
-- **Logic stays Kotlin — single source of truth.** The Compose-free chess engine core is
-  **published from [compose-multiplatform-chess](https://github.com/ber4444/compose-multiplatform-chess)
+- **Logic stays Kotlin — single source of truth, including the TypeScript types.** The Compose-free
+  chess engine core is **published from [compose-multiplatform-chess](https://github.com/ber4444/compose-multiplatform-chess)
   as `io.github.ber4444:chess-core`** (a Kotlin Multiplatform Maven artifact on GitHub Packages) and
   consumed by this repo's thin `chess-core/` wrapper, which adds only the `@JsExport` JS interop
   (`ChessSession`, `JsChessEngineAdapter`). There is **no duplicated Kotlin** between the two repos —
-  bump `chessCoreVersion` in `chess-core/gradle.properties` to pick up core changes.
+  bump `chessCoreVersion` in `chess-core/gradle.properties` to pick up core changes. The wrapper's
+  `generateTypeScriptDefinitions()` emits `chess-core.d.ts` straight from the Kotlin `@JsExport`
+  declarations, so the RN app's TypeScript bindings are generated, not hand-written — change the
+  Kotlin API, rerun `npm run build:core`, and the TS types update (no gateway file to drift).
 
 ## Architecture
 
@@ -95,8 +98,9 @@ flowchart TB
 
 ```
 .
-├── chess-core/                    # Thin Kotlin/JS (IR) wrapper → Kotlin/JS bundle for Metro
-│   ├── build.gradle.kts          #   Depends on io.github.ber4444:chess-core (Maven artifact)
+├── chess-core/                    # Thin Kotlin/JS (IR) wrapper → Kotlin/JS bundle + generated .d.ts
+│   ├── build.gradle.kts          #   Depends on io.github.ber4444:chess-core (Maven artifact);
+│   │                             #   generateTypeScriptDefinitions() emits chess-core.d.ts
 │   └── src/commonMain/            #   Only the RN-specific @JsExport interop:
 │       ├── ChessSession.kt        #     facade (subscribe, playerMove, currentScene, …)
 │       └── JsChessEngineAdapter.kt#     adapts a JS-Promise engine → core's ChessEngine
