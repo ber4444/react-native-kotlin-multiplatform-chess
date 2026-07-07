@@ -8,6 +8,9 @@ on:
 
 jobs:
   # ── chess-core: Kotlin/JS build + commonTest suite ───────────────────────────
+  # Consumes io.github.ber4444:chess-core from GitHub Packages (published from
+  # ber4444/compose-multiplatform-chess). GitHub Packages requires auth even for public packages,
+  # so the build step needs GITHUB_ACTOR + a PAT with `read:packages` (repo secret CHESS_PACKAGES_TOKEN).
   chess-core:
     name: chess-core (Kotlin/JS + tests)
     runs-on: ubuntu-latest
@@ -21,6 +24,9 @@ jobs:
       - name: Build Kotlin/JS + run commonTest
         working-directory: chess-core
         run: ./gradlew jsNodeTest copyJsToApp --no-daemon
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.CHESS_PACKAGES_TOKEN }}
       - name: Upload chess-core JS
         uses: actions/upload-artifact@v4
         with:

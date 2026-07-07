@@ -7,7 +7,9 @@ driven by a single Kotlin scene model.
 
 Rebuilt from [compose-multiplatform-chess](https://github.com/ber4444/compose-multiplatform-chess):
 the Compose UI is replaced by React Native components, the four original 3D renderers collapse to
-two, and the chess engine/rules/scene-math stay Kotlin (no logic reimplemented in JS/TS).
+two, and the chess engine/rules/scene-math stay Kotlin (no logic reimplemented in JS/TS). The chess
+logic is **published as a Maven artifact** (`io.github.ber4444:chess-core`) from the source repo and
+consumed here — there is **no duplicated Kotlin** between the two repos.
 
 [Medium article](https://medium.com/@gabor.berenyi.california/building-a-3d-game-in-react-native-kotlin-multiplatform-526b3c2ddb6a)
 
@@ -21,9 +23,12 @@ two, and the chess engine/rules/scene-math stay Kotlin (no logic reimplemented i
   and iOS lands on a real Metal renderer (not deprecated `expo-gl`/GL ES). Web reuses the existing
   three.js renderer. Both consume the **same** Kotlin `Board3DScene`, so chess logic never knows
   which engine is underneath.
-- **Logic stays Kotlin.** The KMP `chess-core` module compiles to a JS library that runs in the RN
-  JS runtime on every platform. There is **no per-platform native FFI for game logic** — only
-  Stockfish and the Filament renderer are native.
+- **Logic stays Kotlin — single source of truth.** The Compose-free chess engine core is
+  **published from [compose-multiplatform-chess](https://github.com/ber4444/compose-multiplatform-chess)
+  as `io.github.ber4444:chess-core`** (a Kotlin Multiplatform Maven artifact on GitHub Packages) and
+  consumed by this repo's thin `chess-core/` wrapper, which adds only the `@JsExport` JS interop
+  (`ChessSession`, `JsChessEngineAdapter`). There is **no duplicated Kotlin** between the two repos —
+  bump `chessCoreVersion` in `chess-core/gradle.properties` to pick up core changes.
 
 ## Architecture
 
@@ -90,11 +95,12 @@ flowchart TB
 
 ```
 .
-├── chess-core/                    # Kotlin KMP library → Kotlin/JS (IR)
-│   └── src/commonMain/            #   All chess logic (rules, FEN, UCI, scene math)
-│       ├── ChessSession.kt        #   @JsExport facade (subscribe, playerMove, currentScene, …)
-│       └── board3d/               #   Renderer-agnostic scene/camera/picker model
-│   └── src/commonTest/            #   Rules / FEN / scene / camera / draw test suite
+├── chess-core/                    # Thin Kotlin/JS (IR) wrapper → Kotlin/JS bundle for Metro
+│   ├── build.gradle.kts          #   Depends on io.github.ber4444:chess-core (Maven artifact)
+│   └── src/commonMain/            #   Only the RN-specific @JsExport interop:
+│       ├── ChessSession.kt        #     facade (subscribe, playerMove, currentScene, …)
+│       └── JsChessEngineAdapter.kt#     adapts a JS-Promise engine → core's ChessEngine
+│                                  #   ↑ all rules/FEN/UCI/scene-math come from the artifact
 ├── my-app/                        # React Native app (Expo SDK 56, RN 0.85, Fabric)
 │   ├── src/
 │   │   ├── chess-core/            #   TS gateway to the Kotlin/JS bundle
@@ -156,6 +162,11 @@ agreements, a 2D⇄3D toggle, a game-over popup, and a Stockfish-or-CPU opponent
 
 - **Node.js** 20+
 - **JDK 21+** (for the chess-core Gradle build)
+- **A GitHub Personal Access Token with `read:packages`** — the chess-core Maven artifact lives on
+  GitHub Packages, which requires auth even for public packages. Provide it as:
+  - **CI:** the `CHESS_PACKAGES_TOKEN` repo secret (already wired in `.github/workflows/ci.yml`).
+  - **Local:** `gpr.user` + `gpr.key` in `~/.gradle/gradle.properties`, or `GITHUB_ACTOR` +
+    `GITHUB_PACKAGES_TOKEN` env vars.
 - **Xcode** (for iOS) / **Android Studio** + SDK (for Android)
 
 ### First-time setup
@@ -193,7 +204,7 @@ cd ../chess-core && ./gradlew jsNodeTest   # Kotlin core unit tests
 
 | Job | Runner | What it checks |
 |---|---|---|
-| `chess-core` | ubuntu | Kotlin/JS build + `jsNodeTest` (the commonTest suite) |
+| `chess-core` | ubuntu | Pulls `io.github.ber4444:chess-core` from GitHub Packages (PAT auth), Kotlin/JS build + `jsNodeTest` |
 | `app-web` | ubuntu | TypeScript + ESLint + `expo export` web bundle |
 | `electron` | ubuntu | Syntax-checks the Electron main/preload + the `electron` binary |
 | `ios` | macOS | `pod install` + `xcodebuild` (no code signing) |

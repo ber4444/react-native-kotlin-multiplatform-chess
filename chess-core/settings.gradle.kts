@@ -7,7 +7,27 @@ pluginManagement {
 
 dependencyResolutionManagement {
     repositories {
+        // Local dev: when iterating against an unpublished chess-core (e.g. `:chess-core:publishToMavenLocal`
+        // in the compose-multiplatform-chess repo). Maven Local is searched first so a freshly-published
+        // SNAPSHOT/version wins over the published GitHub Packages one during development.
+        mavenLocal()
+
         mavenCentral()
+
+        // The published chess-core artifact lives on GitHub Packages, which requires auth even for
+        // public packages. Credentials come from env (CI) or ~/.gradle/gradle.properties (local):
+        //   gpr.user = <github-username>
+        //   gpr.key  = <PAT with read:packages>
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/ber4444/compose-multiplatform-chess")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: providers.gradleProperty("gpr.user").orNull
+                password = System.getenv("GITHUB_PACKAGES_TOKEN")
+                    ?: System.getenv("GITHUB_TOKEN")
+                    ?: providers.gradleProperty("gpr.key").orNull
+            }
+        }
     }
 }
 
