@@ -15,8 +15,8 @@ jobs:
     name: chess-core (Kotlin/JS + tests)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -28,7 +28,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_PACKAGES_TOKEN: ${{ secrets.CHESS_PACKAGES_TOKEN }}
       - name: Upload chess-core JS
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: chess-core-js
           path: my-app/src/generated/chess-core
@@ -40,8 +40,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: chess-core
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: npm
@@ -50,12 +50,12 @@ jobs:
         working-directory: my-app
         run: npm ci
       - name: Download chess-core JS
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: chess-core-js
           path: my-app/src/generated/chess-core
       - name: Checkout compose-multiplatform-chess for assets
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ber4444/compose-multiplatform-chess
           path: compose-multiplatform-chess
@@ -80,8 +80,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: app-web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: npm
@@ -102,8 +102,8 @@ jobs:
     runs-on: macos-15
     needs: app-web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: npm
@@ -116,12 +116,12 @@ jobs:
         working-directory: my-app
         run: npm ci
       - name: Download chess-core JS
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: chess-core-js
           path: my-app/src/generated/chess-core
       - name: Checkout compose-multiplatform-chess for assets
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ber4444/compose-multiplatform-chess
           path: compose-multiplatform-chess
@@ -132,7 +132,7 @@ jobs:
           COMPOSE_CHESS_PATH: ${{ github.workspace }}/compose-multiplatform-chess
       - name: Cache CocoaPods
         id: pod-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: my-app/ios/Pods
           key: ${{ runner.os }}-pods-${{ hashFiles('my-app/ios/Podfile.lock') }}
@@ -158,13 +158,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: app-web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: my-app/package-lock.json
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -173,12 +173,12 @@ jobs:
         working-directory: my-app
         run: npm ci
       - name: Download chess-core JS
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: chess-core-js
           path: my-app/src/generated/chess-core
       - name: Checkout compose-multiplatform-chess for assets
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ber4444/compose-multiplatform-chess
           path: compose-multiplatform-chess
