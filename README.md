@@ -21,9 +21,12 @@ two, and the chess engine/rules/scene-math stay Kotlin (no logic reimplemented i
   and iOS lands on a real Metal renderer (not deprecated `expo-gl`/GL ES). Web reuses the existing
   three.js renderer. Both consume the **same** Kotlin `Board3DScene`, so chess logic never knows
   which engine is underneath.
-- **Logic stays Kotlin.** The KMP `chess-core` module compiles to a JS library that runs in the RN
-  JS runtime on every platform. There is **no per-platform native FFI for game logic** — only
-  Stockfish and the Filament renderer are native.
+- **Logic stays Kotlin.** All chess logic lives in the published `io.github.ber4444:chess-core`
+  artifact (built from [compose-multiplatform-chess](https://github.com/ber4444/compose-multiplatform-chess))
+  and is consumed here as a Kotlin/JS klib. A thin `@JsExport` facade in `chess-core/` is the only
+  Kotlin source this repo compiles; the resulting JS library runs in the RN JS runtime on every
+  platform. There is **no per-platform native FFI for game logic** — only Stockfish and the
+  Filament renderer are native.
 
 ## Architecture
 
@@ -35,7 +38,7 @@ consumes; the same renderer-agnostic `Board3DScene` feeds two renderers; and a p
 
 ```mermaid
 flowchart TB
-    subgraph CORE["chess-core — Kotlin KMP · commonMain (all game logic)"]
+    subgraph CORE["io.github.ber4444:chess-core — Kotlin KMP (published artifact, all game logic)"]
         direction TB
         LOGIC["Chess engine<br/>rules · FEN · UCI · draw detection"]
         SCENE["board3d/ — renderer-agnostic scene<br/>Board3DScene · OrbitCameraController · BoardRayPicker"]
@@ -90,11 +93,11 @@ flowchart TB
 
 ```
 .
-├── chess-core/                    # Kotlin KMP library → Kotlin/JS (IR)
-│   └── src/commonMain/            #   All chess logic (rules, FEN, UCI, scene math)
-│       ├── ChessSession.kt        #   @JsExport facade (subscribe, playerMove, currentScene, …)
-│       └── board3d/               #   Renderer-agnostic scene/camera/picker model
-│   └── src/commonTest/            #   Rules / FEN / scene / camera / draw test suite
+├── chess-core/                    # Thin Kotlin/JS bindings → io.github.ber4444:chess-core
+│   └── src/commonMain/            #   Only the @JsExport JS interop facade
+│       ├── ChessSession.kt        #   subscribe, playerMove, currentScene, … (consumed by RN)
+│       └── JsChessEngineAdapter.kt#   Adapts a JS Promise engine to the suspend ChessEngine
+│   └── (build.gradle.kts deps io.github.ber4444:chess-core:0.2.0 from GitHub Packages)
 ├── my-app/                        # React Native app (Expo SDK 56, RN 0.85, Fabric)
 │   ├── src/
 │   │   ├── chess-core/            #   TS gateway to the Kotlin/JS bundle
@@ -156,6 +159,14 @@ agreements, a 2D⇄3D toggle, a game-over popup, and a Stockfish-or-CPU opponent
 
 - **Node.js** 20+
 - **JDK 21+** (for the chess-core Gradle build)
+- **GitHub Packages auth** — `chess-core` depends on the published `io.github.ber4444:chess-core`
+  klib from `maven.pkg.github.com`, which requires auth even for reads. Add to
+  `~/.gradle/gradle.properties`:
+  ```
+  gpr.user=<your-github-username>
+  gpr.key=<a-PAT-with-read:packages>
+  ```
+  (CI uses the auto-provided `GITHUB_TOKEN` instead.)
 - **Xcode** (for iOS) / **Android Studio** + SDK (for Android)
 
 ### First-time setup
@@ -163,7 +174,7 @@ agreements, a 2D⇄3D toggle, a game-over popup, and a Stockfish-or-CPU opponent
 ```bash
 cd my-app
 npm install
-npm run build:core          # Gradle: compile chess-core → JS, copy into src/generated/
+npm run build:core          # Gradle: resolve io.github.ber4444:chess-core, compile facade → JS
 npm run prepare:assets      # Split chess.glb + convert piece SVGs + prepare the three.js renderer
 ```
 
@@ -184,7 +195,8 @@ npm run android             # Android (emulator/device)
 ```bash
 npm run typecheck                       # TypeScript
 npm run lint                            # ESLint
-cd ../chess-core && ./gradlew jsNodeTest   # Kotlin core unit tests
+# Chess rules / FEN / scene unit tests live in upstream chess-core and run in its CI,
+# not here — this repo only compiles the thin @JsExport facade.
 ```
 
 ## CI
@@ -193,7 +205,7 @@ cd ../chess-core && ./gradlew jsNodeTest   # Kotlin core unit tests
 
 | Job | Runner | What it checks |
 |---|---|---|
-| `chess-core` | ubuntu | Kotlin/JS build + `jsNodeTest` (the commonTest suite) |
+| `chess-core` | ubuntu | Resolves `io.github.ber4444:chess-core` klib from GitHub Packages, compiles the `@JsExport` facade → JS bundle |
 | `app-web` | ubuntu | TypeScript + ESLint + `expo export` web bundle |
 | `electron` | ubuntu | Syntax-checks the Electron main/preload + the `electron` binary |
 | `ios` | macOS | `pod install` + `xcodebuild` (no code signing) |
