@@ -214,7 +214,6 @@ function PiecePool({
   const model = useModel(glb, { instanceCount });
   const { transformManager } = useFilamentContext();
   const asset = getAssetFromModel(model);
-  // eslint-disable-next-line react-hooks/refs
   const prevSig = useRef<string[]>([]);
 
   useEffect(() => {
@@ -254,10 +253,10 @@ export function Board3D({ session, snapshot, onSquareTapped }: Board3DProps) {
 
   // Scene pieces — re-derived only when the game state changes (NOT on camera moves
   // or animation frames). currentScene() crosses into Kotlin/JS, so keep it per-move.
-  const scenePieces = useMemo(
-    () => session.currentScene().pieces,
-    [snapshot, session],
-  );
+  const scenePieces = useMemo(() => {
+    void snapshot.fen; // memo invalidation key for currentScene(), which reads session state.
+    return session.currentScene().pieces;
+  }, [snapshot.fen, session]);
 
   const [cam, setCam] = useState<CameraView>(() => session.currentCamera());
 
@@ -278,7 +277,6 @@ export function Board3D({ session, snapshot, onSquareTapped }: Board3DProps) {
     if (!snapshot.animating) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setAnimPos(null);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAnimSecondaryPos(null);
       return;
     }
