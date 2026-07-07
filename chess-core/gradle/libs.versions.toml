@@ -1,12 +1,7 @@
 [versions]
-kotlinxCoroutines = "1.9.0"
-kermit = "2.0.5"
+# kotlinx-coroutines + kermit are no longer declared here: they ship transitively with
+# io.github.ber4444:chess-core (coroutines as `api`, kermit as `implementation`).
 kotlin = "2.3.20"
-
-[libraries]
-kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
-kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
-kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
