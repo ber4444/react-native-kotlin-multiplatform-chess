@@ -38,7 +38,7 @@ jobs:
         if: matrix.language == 'java-kotlin'
         run: bash .github/codeql/test-filter-node-modules.sh
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: npm
@@ -48,7 +48,7 @@ jobs:
         working-directory: my-app
         run: npm ci
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
