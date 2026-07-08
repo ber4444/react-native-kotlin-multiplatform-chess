@@ -34,6 +34,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Test SARIF filter
+        if: matrix.language == 'java-kotlin'
+        run: bash .github/codeql/test-filter-node-modules.sh
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -66,4 +70,31 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
         with:
+          category: "/language:${{ matrix.language }}"
+          output: sarif-results
+          upload: failure-only
+
+      - name: Remove node_modules results from SARIF
+        shell: bash
+        run: |
+          sarif_files=()
+          while IFS= read -r -d '' sarif_file; do
+            sarif_files+=("$sarif_file")
+          done < <(find sarif-results -type f -name '*.sarif' -print0)
+
+          if (( ${#sarif_files[@]} == 0 )); then
+            echo "No SARIF files found" >&2
+            exit 1
+          fi
+
+          for sarif_file in "${sarif_files[@]}"; do
+            jq --from-file .github/codeql/filter-node-modules.jq \
+              "$sarif_file" >"${sarif_file}.filtered"
+            mv "${sarif_file}.filtered" "$sarif_file"
+          done
+
+      - name: Upload filtered SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: sarif-results
           category: "/language:${{ matrix.language }}"
