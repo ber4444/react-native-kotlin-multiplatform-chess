@@ -1,0 +1,23 @@
+name: repo-codeql-config
+
+paths:
+  - .github/workflows
+  - chess-core/src
+  - my-app/android/app/src/main/java
+  - my-app/electron
+  - my-app/scripts
+  - my-app/src
+  - my-app/babel.config.js
+  - my-app/eslint.config.js
+  - my-app/metro.config.js
+
+paths-ignore:
+  - chess-core/build/**
+  - my-app/android/.gradle/**
+  - my-app/android/app/build/**
+  - my-app/ios/Pods/**
+  - my-app/node_modules/**
+  - my-app/public/stockfish-18-lite-single.js
+  - my-app/src/components/chess/piece-paths.generated.ts
+  - my-app/src/components/chess/three-renderer/*.generated.js
+  - my-app/src/generated/**
