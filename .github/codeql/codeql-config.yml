@@ -2,8 +2,8 @@ name: repo-codeql-config
 
 paths:
   - .github/workflows
-  - chess-core/src
-  - my-app/android/app/src/main/java
+  - chess-core
+  - my-app/android
   - my-app/electron
   - my-app/scripts
   - my-app/src
