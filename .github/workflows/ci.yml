@@ -49,16 +49,22 @@ jobs:
           cache: gradle
       - name: Resolve published artifacts + run smoke test
         working-directory: on-device-ai
-        run: ./gradlew jsNodeTest --no-daemon
+        run: ./gradlew jsNodeTest copyJsToApp --no-daemon
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_PACKAGES_TOKEN: ${{ secrets.CHESS_PACKAGES_TOKEN }}
+      - name: Upload on-device-ai JS
+        uses: actions/upload-artifact@v7
+        with:
+          name: on-device-ai-js
+          path: my-app/src/generated/on-device-ai
+          include-hidden-files: true
 
   # ── RN app: typecheck + lint + web build ─────────────────────────────────────
   app-web:
     name: RN app (typecheck + lint + web)
     runs-on: ubuntu-latest
-    needs: chess-core
+    needs: [chess-core, on-device-ai]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -74,6 +80,11 @@ jobs:
         with:
           name: chess-core-js
           path: my-app/src/generated/chess-core
+      - name: Download on-device-ai JS
+        uses: actions/download-artifact@v7
+        with:
+          name: on-device-ai-js
+          path: my-app/src/generated/on-device-ai
       - name: Checkout compose-multiplatform-chess for assets
         uses: actions/checkout@v7
         with:
@@ -140,6 +151,11 @@ jobs:
         with:
           name: chess-core-js
           path: my-app/src/generated/chess-core
+      - name: Download on-device-ai JS
+        uses: actions/download-artifact@v7
+        with:
+          name: on-device-ai-js
+          path: my-app/src/generated/on-device-ai
       - name: Checkout compose-multiplatform-chess for assets
         uses: actions/checkout@v7
         with:
@@ -197,6 +213,11 @@ jobs:
         with:
           name: chess-core-js
           path: my-app/src/generated/chess-core
+      - name: Download on-device-ai JS
+        uses: actions/download-artifact@v7
+        with:
+          name: on-device-ai-js
+          path: my-app/src/generated/on-device-ai
       - name: Checkout compose-multiplatform-chess for assets
         uses: actions/checkout@v7
         with:
