@@ -20,10 +20,10 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             // The on-device AI orchestration (move coach, rules Q&A, opening explainer, route policy).
-            implementation("io.github.ber4444:onDeviceAi:${property("onDeviceAiVersion")}")
+            implementation("io.github.ber4444:ondeviceai:${property("onDeviceAiVersion")}")
             // coachApi comes transitively via onDeviceAi's api() dep, but declare it explicitly so the
             // smoke test can reference coachApi types (OpeningExplainResponse) directly.
-            implementation("io.github.ber4444:coachApi:${property("coachApiVersion")}")
+            implementation("io.github.ber4444:coachapi:${property("coachApiVersion")}")
             implementation(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {
