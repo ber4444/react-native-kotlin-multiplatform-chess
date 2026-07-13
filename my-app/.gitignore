@@ -39,8 +39,8 @@ yarn-error.*
 example
 
 # ── chess port ────────────────────────────────────────────────────────────────
-# Generated from chess-core (Gradle js(IR) build output) — regenerate with npm run build:core.
-src/generated/chess-core/
+# Generated from Kotlin multiplatform modules (Gradle js(IR) build output) — regenerate with npm run build:core.
+src/generated/
 
 # Generated from the single-source-of-truth piece drawables.
 src/components/chess/piece-paths.generated.ts
