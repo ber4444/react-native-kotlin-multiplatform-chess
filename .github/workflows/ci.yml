@@ -47,6 +47,15 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: gradle
+      - name: Checkout compose-multiplatform-chess (PR 86) for local publish
+        uses: actions/checkout@v7
+        with:
+          repository: ber4444/compose-multiplatform-chess
+          ref: publish-on-device-ai
+          path: compose-multiplatform-chess
+      - name: Publish onDeviceAi + coachApi to mavenLocal
+        working-directory: compose-multiplatform-chess
+        run: ./gradlew :onDeviceAi:publishToMavenLocal :coachApi:publishToMavenLocal --no-daemon
       - name: Resolve published artifacts + run smoke test
         working-directory: on-device-ai
         run: ./gradlew jsNodeTest --no-daemon
