@@ -13,6 +13,8 @@ plugins {
 kotlin {
     js(IR) {
         nodejs()
+        binaries.library()
+        generateTypeScriptDefinitions()
     }
 
     sourceSets {
@@ -28,4 +30,13 @@ kotlin {
             implementation(kotlin("test"))
         }
     }
+}
+
+
+val copyJsToApp by tasks.registering(Copy::class) {
+    description = "Copies the production JS library + .d.ts into ../my-app/src/generated/on-device-ai for Metro."
+    group = "build"
+    from(layout.buildDirectory.dir("dist/js/productionLibrary"))
+    into(rootProject.projectDir.resolve("../my-app/src/generated/on-device-ai"))
+    dependsOn("jsNodeProductionLibraryDistribution")
 }

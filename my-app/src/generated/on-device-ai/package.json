@@ -1,0 +1,13 @@
+{
+  "name": "on-device-ai",
+  "version": "0.0.0-unspecified",
+  "main": "on-device-ai.js",
+  "types": "on-device-ai.d.ts",
+  "devDependencies": {
+    "typescript": "5.9.3"
+  },
+  "dependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {},
+  "bundledDependencies": []
+}
