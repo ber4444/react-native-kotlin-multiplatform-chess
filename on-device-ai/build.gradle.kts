@@ -32,6 +32,18 @@ kotlin {
     }
 }
 
+// Force a patched serialize-javascript into the Kotlin/JS test toolchain. The Node test runner KGP
+// downloads (mocha) pins serialize-javascript ^6.0.2, which is covered by two advisories: code
+// injection via RegExp.flags / Date.toISOString (GHSA-5c6j-r48x-rmvq, fixed in 7.0.3) and
+// GHSA-qj8w-gfj5-8c6v (fixed in 7.0.5). It is only pulled in for the jsNodeTest task and never ships
+// in the RN bundle, but Dependabot flags it regardless. A Yarn `resolution` pins the whole
+// dependency tree to the patched release; run `./gradlew kotlinUpgradeYarnLock` after changing this
+// to refresh kotlin-js-store/yarn.lock.
+rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
+    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>()
+        .resolution("serialize-javascript", "7.0.5")
+}
+
 
 val copyJsToApp by tasks.registering(Copy::class) {
     description = "Copies the production JS library + .d.ts into ../my-app/src/generated/on-device-ai for Metro."
