@@ -13,19 +13,30 @@ plugins {
 kotlin {
     js(IR) {
         nodejs()
+        binaries.library()
+        generateTypeScriptDefinitions()
     }
 
     sourceSets {
         commonMain.dependencies {
             // The on-device AI orchestration (move coach, rules Q&A, opening explainer, route policy).
-            implementation("io.github.ber4444:onDeviceAi:${property("onDeviceAiVersion")}")
+            implementation("io.github.ber4444:ondeviceai:${property("onDeviceAiVersion")}")
             // coachApi comes transitively via onDeviceAi's api() dep, but declare it explicitly so the
             // smoke test can reference coachApi types (OpeningExplainResponse) directly.
-            implementation("io.github.ber4444:coachApi:${property("coachApiVersion")}")
+            implementation("io.github.ber4444:coachapi:${property("coachApiVersion")}")
             implementation(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
     }
+}
+
+
+val copyJsToApp by tasks.registering(Copy::class) {
+    description = "Copies the production JS library + .d.ts into ../my-app/src/generated/on-device-ai for Metro."
+    group = "build"
+    from(layout.buildDirectory.dir("dist/js/productionLibrary"))
+    into(rootProject.projectDir.resolve("../my-app/src/generated/on-device-ai"))
+    dependsOn("jsNodeProductionLibraryDistribution")
 }
