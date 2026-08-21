@@ -52,16 +52,22 @@ kotlin {
     }
 }
 
-// Force a patched serialize-javascript into the Kotlin/JS test toolchain. The Node test runner KGP
-// downloads (mocha) pins serialize-javascript ^6.0.2, which is covered by two advisories: code
-// injection via RegExp.flags / Date.toISOString (GHSA-5c6j-r48x-rmvq, fixed in 7.0.3) and
-// GHSA-qj8w-gfj5-8c6v (fixed in 7.0.5). It is only pulled in for the jsNodeTest task and never ships
-// in the RN bundle, but Dependabot flags it regardless. A Yarn `resolution` pins the whole
-// dependency tree to the patched release; run `./gradlew kotlinUpgradeYarnLock` after changing this
-// to refresh kotlin-js-store/yarn.lock.
+// Force patched transitive deps into the Kotlin/JS test toolchain. The Node test runner KGP
+// downloads (mocha) pins versions that Dependabot flags; none of these ship in the RN bundle, they
+// only run during jsNodeTest. A Yarn `resolution` pins the whole dependency tree to the patched
+// release. Only packages whose advisory fix falls *outside* mocha's declared range need a pin here —
+// brace-expansion and js-yaml patch within range, so a plain lock refresh covers those. Run
+// `./gradlew kotlinUpgradeYarnLock` after changing this to refresh kotlin-js-store/yarn.lock.
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
-    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>()
-        .resolution("serialize-javascript", "7.0.5")
+    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().apply {
+        // mocha pins ^6.0.2. Code injection via RegExp.flags / Date.toISOString
+        // (GHSA-5c6j-r48x-rmvq, fixed in 7.0.3) and GHSA-qj8w-gfj5-8c6v (fixed in 7.0.5).
+        resolution("serialize-javascript", "7.0.5")
+        // mocha pins ^7.0.0 and jsdiff never patched the 7.x line. ReDoS in parsePatch/applyPatch
+        // (GHSA-73rr-hh4g-fpgx, fixed in 8.0.3). mocha only calls diffLines/diffWordsWithSpace/
+        // createPatch for assertion output, all unchanged across the 7 -> 8 major.
+        resolution("diff", "8.0.4")
+    }
 }
 
 // Copy the built JS library + generated TypeScript declarations into the RN app's source tree where

@@ -1,4 +1,4 @@
-// on-device-ai — smoke consumer of the published `io.github.ber4444:onDeviceAi` + `io.github.ber4444:coachApi`
+// on-device-ai — smoke consumer of the published `io.github.ber4444:ondeviceai` + `io.github.ber4444:coachapi`
 // artifacts. This module proves the publish path end-to-end: it resolves both artifacts from GitHub
 // Packages (or Maven Local during local dev), compiles against their public API on Kotlin/JS, and runs
 // a test that references types from each. It does NOT add a @JsExport facade or wire into the RN app
@@ -32,18 +32,23 @@ kotlin {
     }
 }
 
-// Force a patched serialize-javascript into the Kotlin/JS test toolchain. The Node test runner KGP
-// downloads (mocha) pins serialize-javascript ^6.0.2, which is covered by two advisories: code
-// injection via RegExp.flags / Date.toISOString (GHSA-5c6j-r48x-rmvq, fixed in 7.0.3) and
-// GHSA-qj8w-gfj5-8c6v (fixed in 7.0.5). It is only pulled in for the jsNodeTest task and never ships
-// in the RN bundle, but Dependabot flags it regardless. A Yarn `resolution` pins the whole
-// dependency tree to the patched release; run `./gradlew kotlinUpgradeYarnLock` after changing this
-// to refresh kotlin-js-store/yarn.lock.
+// Force patched transitive deps into the Kotlin/JS test toolchain — mirrors chess-core/build.gradle.kts.
+// The Node test runner KGP downloads (mocha) pins versions that Dependabot flags; none of these ship
+// anywhere, they only run during jsNodeTest. Only packages whose advisory fix falls *outside* mocha's
+// declared range need a pin here — brace-expansion and js-yaml patch within range, so a plain lock
+// refresh covers those. Run `./gradlew kotlinUpgradeYarnLock` after changing this to refresh
+// kotlin-js-store/yarn.lock.
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
-    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>()
-        .resolution("serialize-javascript", "7.0.5")
+    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().apply {
+        // mocha pins ^6.0.2. Code injection via RegExp.flags / Date.toISOString
+        // (GHSA-5c6j-r48x-rmvq, fixed in 7.0.3) and GHSA-qj8w-gfj5-8c6v (fixed in 7.0.5).
+        resolution("serialize-javascript", "7.0.5")
+        // mocha pins ^7.0.0 and jsdiff never patched the 7.x line. ReDoS in parsePatch/applyPatch
+        // (GHSA-73rr-hh4g-fpgx, fixed in 8.0.3). mocha only calls diffLines/diffWordsWithSpace/
+        // createPatch for assertion output, all unchanged across the 7 -> 8 major.
+        resolution("diff", "8.0.4")
+    }
 }
-
 
 val copyJsToApp by tasks.registering(Copy::class) {
     description = "Copies the production JS library + .d.ts into ../my-app/src/generated/on-device-ai for Metro."

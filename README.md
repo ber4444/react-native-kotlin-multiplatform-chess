@@ -105,7 +105,7 @@ flowchart TB
 │       ├── ChessSession.kt        #     facade (subscribe, playerMove, currentScene, …)
 │       └── JsChessEngineAdapter.kt#     adapts a JS-Promise engine → core's ChessEngine
 │                                  #   ↑ all rules/FEN/UCI/scene-math come from the artifact
-├── on-device-ai/                  # Smoke consumer of io.github.ber4444:onDeviceAi + coachApi
+├── on-device-ai/                  # Smoke consumer of io.github.ber4444:ondeviceai + coachapi
 │   └── src/                       #   Proves the published artifacts resolve + compile on JS.
 │                                  #   (No @JsExport facade or app integration yet — follow-up.)
 ├── my-app/                        # React Native app (Expo SDK 56, RN 0.85, Fabric)
