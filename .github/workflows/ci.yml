@@ -34,8 +34,8 @@ jobs:
           path: my-app/src/generated/chess-core
           include-hidden-files: true
 
-  # ── on-device-ai: smoke consumer of published onDeviceAi + coachApi ──────────
-  # Proves io.github.ber4444:onDeviceAi + io.github.ber4444:coachApi resolve from GitHub Packages
+  # ── on-device-ai: smoke consumer of published ondeviceai + coachapi ──────────
+  # Proves io.github.ber4444:ondeviceai + io.github.ber4444:coachapi resolve from GitHub Packages
   # and their public types compile on Kotlin/JS. Same auth as chess-core (PAT with read:packages).
   on-device-ai:
     name: on-device-ai (smoke consumer)

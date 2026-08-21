@@ -1,4 +1,4 @@
-// on-device-ai — smoke consumer of the published `io.github.ber4444:onDeviceAi` + `io.github.ber4444:coachApi`
+// on-device-ai — smoke consumer of the published `io.github.ber4444:ondeviceai` + `io.github.ber4444:coachapi`
 // artifacts. This module proves the publish path end-to-end: it resolves both artifacts from GitHub
 // Packages (or Maven Local during local dev), compiles against their public API on Kotlin/JS, and runs
 // a test that references types from each. It does NOT add a @JsExport facade or wire into the RN app
@@ -48,7 +48,7 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
         // createPatch for assertion output, all unchanged across the 7 -> 8 major.
         resolution("diff", "8.0.4")
     }
-
+}
 
 val copyJsToApp by tasks.registering(Copy::class) {
     description = "Copies the production JS library + .d.ts into ../my-app/src/generated/on-device-ai for Metro."

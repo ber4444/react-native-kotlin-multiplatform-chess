@@ -5,7 +5,7 @@ import com.example.ondeviceai.AiRoutePolicies
 import com.example.ondeviceai.AiRoutePolicy
 
 /**
- * Smoke references proving the published `io.github.ber4444:onDeviceAi` + `io.github.ber4444:coachApi`
+ * Smoke references proving the published `io.github.ber4444:ondeviceai` + `io.github.ber4444:coachapi`
  * artifacts resolve and their public types are reachable from a Kotlin/JS consumer. This is NOT an
  * @JsExport facade — it just touches one type from each artifact so a compile failure means the
  * publish path broke.
