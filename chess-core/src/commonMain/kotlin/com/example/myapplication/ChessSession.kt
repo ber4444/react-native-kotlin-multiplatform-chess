@@ -20,6 +20,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
+/**
+ * Workaround for a Kotlin/JS compiler bug where `generateTypeScriptDefinitions()` fails to emit
+ * a `.d.ts` file if the module only exports classes and data classes but no top-level functions.
+ */
+@JsExport
+fun _forceTsDefinitions() {}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // JS-facing DTOs. All exposed types must be @JsExport-compatible (primitives,
 // String, arrays thereof, or @JsExport classes). No Pair<*,*>, no arbitrary
