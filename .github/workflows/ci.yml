@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Every job only reads the repo: artifacts and caches use the runner's own
+# token, and GitHub Packages uses the CHESS_PACKAGES_TOKEN secret.
+permissions:
+  contents: read
+
 jobs:
   # ── chess-core: Kotlin/JS build + commonTest suite ───────────────────────────
   # Consumes io.github.ber4444:chess-core from GitHub Packages (published from
