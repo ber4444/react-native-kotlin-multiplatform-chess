@@ -166,12 +166,16 @@ jobs:
         run: npm run prepare:assets
         env:
           COMPOSE_CHESS_PATH: ${{ github.workspace }}/compose-multiplatform-chess
+      # ios/ is not committed (Continuous Native Generation) — generate it from app.json.
+      - name: Expo prebuild (ios)
+        working-directory: my-app
+        run: npx expo prebuild --platform ios --no-install
       - name: Cache CocoaPods
         id: pod-cache
         uses: actions/cache@v6
         with:
           path: my-app/ios/Pods
-          key: ${{ runner.os }}-pods-${{ hashFiles('my-app/ios/Podfile.lock') }}
+          key: ${{ runner.os }}-pods-${{ hashFiles('my-app/package-lock.json', 'my-app/app.json') }}
           restore-keys: ${{ runner.os }}-pods-
       - name: CocoaPods install
         working-directory: my-app/ios
@@ -228,6 +232,10 @@ jobs:
         run: npm run prepare:assets
         env:
           COMPOSE_CHESS_PATH: ${{ github.workspace }}/compose-multiplatform-chess
+      # android/ is not committed (Continuous Native Generation) — generate it from app.json.
+      - name: Expo prebuild (android)
+        working-directory: my-app
+        run: npx expo prebuild --platform android --no-install
       - name: assembleDebug
         working-directory: my-app/android
         run: ./gradlew assembleDebug --no-daemon -PreactNativeArchitectures=arm64-v8a
