@@ -3,9 +3,9 @@
 // every state change emitted from the Kotlin core.
 
 import { useEffect, useState } from 'react';
-import { NativeModules, Platform } from 'react-native';
 
 import { ChessSession, createJsChessEngine, type ChessSnapshot } from '@/chess-core';
+import Stockfish from '../../modules/stockfish';
 
 declare global {
   interface Window {
@@ -14,12 +14,6 @@ declare global {
       getBestMove: (fen: string, thinkTimeMs: number) => Promise<string | null>;
     };
   }
-}
-
-/** Android Stockfish native module (StockfishModule.kt → NativeModules.StockfishAndroid). */
-interface StockfishAndroidModule {
-  getBestMove(fen: string, thinkTimeMs: number): Promise<string | null>;
-  isAvailable(): Promise<boolean>;
 }
 
 let sessionInstance: ChessSession | null = null;
@@ -45,12 +39,11 @@ function attachPlatformEngine(session: ChessSession) {
     session.attachEngine(createJsChessEngine((fen, thinkTimeMs) => bridge.getBestMove(fen, thinkTimeMs)));
     return;
   }
-  // Android — libstockfish.so via the StockfishAndroid native module.
-  if (Platform.OS === 'android') {
-    const sf = NativeModules.StockfishAndroid as StockfishAndroidModule | undefined;
-    if (sf?.getBestMove) {
-      session.attachEngine(createJsChessEngine((fen, thinkTimeMs) => sf.getBestMove!(fen, thinkTimeMs)));
-    }
+  // Android — libstockfish.so via the local Stockfish Expo module (modules/stockfish).
+  // The module only ships for Android, so it is null everywhere else.
+  const sf = Stockfish;
+  if (sf) {
+    session.attachEngine(createJsChessEngine((fen, thinkTimeMs) => sf.getBestMove(fen, thinkTimeMs)));
   }
   // iOS — ChessKit Stockfish native module would go here (P5 future work).
   // Web — stockfish.js Web Worker would go here (reuses the wasm engine assets).

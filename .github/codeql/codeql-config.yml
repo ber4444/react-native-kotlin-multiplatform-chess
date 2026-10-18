@@ -3,8 +3,8 @@ name: repo-codeql-config
 paths:
   - .github/workflows
   - chess-core
-  - my-app/android
   - my-app/electron
+  - my-app/modules
   - my-app/scripts
   - my-app/src
   - my-app/babel.config.js
@@ -13,8 +13,8 @@ paths:
 
 paths-ignore:
   - chess-core/build/**
-  - my-app/android/.gradle/**
-  - my-app/android/app/build/**
+  - my-app/android/**
+  - my-app/modules/*/android/build/**
   - my-app/ios/Pods/**
   - my-app/node_modules/**
   - my-app/public/stockfish-18-lite-single.js
