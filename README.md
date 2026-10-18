@@ -105,12 +105,13 @@ flowchart TB
 │       ├── ChessSession.kt        #     facade (subscribe, playerMove, currentScene, …)
 │       └── JsChessEngineAdapter.kt#     adapts a JS-Promise engine → core's ChessEngine
 │                                  #   ↑ all rules/FEN/UCI/scene-math come from the artifact
-├── on-device-ai/                  # Smoke consumer of io.github.ber4444:ondeviceai + coachapi
-│   └── src/                       #   Proves the published artifacts resolve + compile on JS.
-│                                  #   (No @JsExport facade or app integration yet — follow-up.)
+├── on-device-ai/                  # Kotlin/JS wrapper for io.github.ber4444:ondeviceai + coachapi
+│   ├── build.gradle.kts          #   generateTypeScriptDefinitions() emits on-device-ai.d.ts
+│   └── src/commonMain/            #   @JsExport facade (OnDeviceAiSession) for the React Native app
 ├── my-app/                        # React Native app (Expo SDK 56, RN 0.85, Fabric)
 │   ├── src/
-│   │   ├── chess-core/            #   TS gateway to the Kotlin/JS bundle
+│   │   ├── chess-core/            #   TS gateway to the Kotlin/JS chess-core bundle
+│   │   ├── on-device-ai/          #   TS gateway to the Kotlin/JS on-device-ai bundle
 │   │   ├── components/chess/      #   2D board (react-native-svg) + 3D board + dialogs
 │   │   │   ├── Board3D.tsx        #     Native: RN Filament (Metal/Vulkan)
 │   │   │   ├── Board3D.web.tsx    #     Web: three.js (window.chess3d, WebGL)
@@ -222,7 +223,8 @@ npm run android             # Android (emulator/device)
 ```bash
 npm run typecheck                       # TypeScript
 npm run lint                            # ESLint
-cd ../chess-core && ./gradlew jsNodeTest   # Kotlin core unit tests
+cd ../chess-core && ./gradlew jsNodeTest   # chess-core Kotlin unit tests
+cd ../on-device-ai && ./gradlew jsNodeTest # on-device-ai Kotlin unit tests
 ```
 
 ## CI
@@ -232,6 +234,7 @@ cd ../chess-core && ./gradlew jsNodeTest   # Kotlin core unit tests
 | Job | Runner | What it checks |
 |---|---|---|
 | `chess-core` | ubuntu | Pulls `io.github.ber4444:chess-core` from GitHub Packages (PAT auth), Kotlin/JS build + `jsNodeTest` |
+| `on-device-ai` | ubuntu | Pulls `io.github.ber4444:ondeviceai` + `coachapi` from GitHub Packages, Kotlin/JS build + `jsNodeTest` |
 | `app-web` | ubuntu | TypeScript + ESLint + `expo export` web bundle |
 | `electron` | ubuntu | Syntax-checks the Electron main/preload + the `electron` binary |
 | `ios` | macOS | `expo prebuild` + `pod install` + `xcodebuild` (no code signing) |
