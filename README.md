@@ -195,7 +195,9 @@ npm run prepare:assets      # Split chess.glb + convert piece SVGs + prepare the
 lost on the next prebuild. Instead:
 
 - **Native config** (permissions, Gradle/Podfile properties, icons, splash) goes in `app.json`,
-  via config plugins such as `expo-build-properties`.
+  via config plugins such as `expo-build-properties`. Anything they can't express goes in a small
+  local plugin under `my-app/plugins/`. For example, `withGradleHeap.js` gives Gradle a 4 GB heap,
+  because packaging the two ~80 MB Stockfish binaries runs out of memory with the template's 2 GB.
 - **Native code** goes in a local Expo module under `my-app/modules/` (Expo Modules API). It's
   autolinked, so there's nothing to register by hand. See `modules/stockfish`.
 

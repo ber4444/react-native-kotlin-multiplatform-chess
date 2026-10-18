@@ -46,7 +46,8 @@
             "useLegacyPackaging": true
           }
         }
-      ]
+      ],
+      "./plugins/withGradleHeap"
     ],
     "experiments": {
       "typedRoutes": true,
