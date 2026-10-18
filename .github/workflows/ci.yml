@@ -238,22 +238,5 @@ jobs:
         run: npx expo prebuild --platform android --no-install
       - name: assembleDebug
         working-directory: my-app/android
+        # --stacktrace: Gradle 9 otherwise hides the cause of worker failures.
         run: ./gradlew assembleDebug --no-daemon --stacktrace -PreactNativeArchitectures=arm64-v8a
-      # Diagnostic (temporary): repackage a few times to try to reproduce the
-      # intermittent :app:packageDebug failure with a stack trace.
-      - name: Repackage APK (diagnostic)
-        working-directory: my-app/android
-        run: |
-          for i in 1 2 3 4 5; do
-            echo "::group::packageDebug attempt $i"
-            ./gradlew :app:packageDebug --rerun --stacktrace -PreactNativeArchitectures=arm64-v8a || { echo "::endgroup::"; echo "attempt $i failed"; exit 1; }
-            echo "::endgroup::"
-          done
-      # :app:packageDebug has been failing intermittently without a cause message.
-      # Record how close the build gets to the runner's disk and memory limits.
-      - name: Disk and memory after build
-        if: always()
-        run: |
-          df -h /
-          free -m
-          du -sh my-app/android/app/build my-app/modules/stockfish/android/build my-app/node_modules ~/.gradle 2>/dev/null || true
