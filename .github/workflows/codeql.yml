@@ -22,13 +22,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - language: actions
-            build-mode: none
-          - language: javascript-typescript
-            build-mode: none
-          - language: java-kotlin
-            build-mode: manual
+        # java-kotlin needs a full `expo prebuild` + `assembleDebug`, which runs 20-31 min against
+        # ~2 min for the other two languages. What it can actually extract is one file —
+        # my-app/modules/stockfish/.../StockfishModule.kt, the repo's only hand-written native
+        # source. That file is worth analyzing (it spawns a ProcessBuilder and writes a
+        # JS-supplied FEN to its stdin), but not on every push to a PR, so it is skipped on
+        # pull_request and left to push-to-main, the weekly cron, and workflow_dispatch.
+        #
+        # It is NOT skipped because the Kotlin comes from ber4444/compose-multiplatform-chess.
+        # Two reasons that argument does not hold: CodeQL extracts source in the repo where it
+        # runs, never a dependency's jar; and chess-core/ + on-device-ai/ only have a js(IR)
+        # target, while the extractor hooks the Kotlin *JVM* compiler — so no build step added
+        # here could bring them into scope. (Upstream's own java-kotlin job is additionally
+        # `continue-on-error` while the CodeQL CLI tops out at Kotlin 2.4.0, so it reports green
+        # without extracting anything. This repo's Android build is on Kotlin 2.1.20 via React
+        # Native's libs.versions.toml and does extract: 76 rules, 0 results.)
+        #
+        # This selection lives in the matrix, NOT in a job-level `if:` — `jobs.<job_id>.if` is
+        # evaluated before the matrix expands and so has no `matrix` context.
+        #
+        # build-mode is derived in the init step rather than via `include:`, because an `include`
+        # entry whose language is absent from the list creates a *new* combination instead of
+        # annotating one, which would silently add java-kotlin back on pull requests.
+        language: ${{ fromJSON(github.event_name == 'pull_request' && '["actions","javascript-typescript"]' || '["actions","javascript-typescript","java-kotlin"]') }}
 
     steps:
       - name: Checkout repository
@@ -58,7 +74,7 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
+          build-mode: ${{ (matrix.language == 'java-kotlin' && 'manual') || 'none' }}
           config-file: ./.github/codeql/codeql-config.yml
 
       - name: Build Java/Kotlin
