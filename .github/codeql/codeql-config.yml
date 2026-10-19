@@ -1,8 +1,13 @@
 name: repo-codeql-config
 
 paths:
+  # chess-core/ and on-device-ai/ are deliberately absent. Their Kotlin only has a js(IR) target,
+  # and the java-kotlin extractor hooks the Kotlin *JVM* compiler, so listing them here implies
+  # coverage that no analysis can deliver — the compiled output lands in my-app/src/generated,
+  # which is ignored below as generated code. Keeping chess-core in this list made the java-kotlin
+  # job look like it was analyzing the engine wrapper when its only real subject is
+  # my-app/modules/stockfish.
   - .github/workflows
-  - chess-core
   - my-app/electron
   - my-app/modules
   - my-app/scripts
@@ -12,7 +17,6 @@ paths:
   - my-app/metro.config.js
 
 paths-ignore:
-  - chess-core/build/**
   - my-app/android/**
   - my-app/modules/*/android/build/**
   - my-app/ios/Pods/**

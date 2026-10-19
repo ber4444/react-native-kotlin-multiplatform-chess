@@ -49,6 +49,12 @@ class StockfishModule : Module() {
 
   /** Serialized so concurrent calls queue up on the single engine process. */
   private fun bestMove(fen: String, thinkTimeMs: Int): String? = synchronized(lock) {
+    // UCI is newline-delimited, so a FEN carrying CR/LF would smuggle extra commands into the
+    // engine's stdin rather than being parsed as a position. Reject before touching the process;
+    // JS already treats null as "no engine move", so pickMoveCPU takes over as it would for any
+    // position Stockfish declines. Stockfish stays the authority on whether a FEN is *legal* —
+    // this only guards the command boundary.
+    if (!fen.matches(FEN_CHARS)) return null
     try {
       ensureReady()
       send("position fen $fen")
@@ -97,4 +103,15 @@ class StockfishModule : Module() {
     } catch (_: IllegalThreadStateException) {
       true
     }
+
+  private companion object {
+    /**
+     * Every character a FEN can legitimately hold: piece letters, rank digits, '/' between ranks,
+     * the spaces separating its six fields, and '-' for an empty castling or en-passant field
+     * (castling also allows file letters under Shredder-FEN). An allowlist rather than a
+     * blocklist of separators, so control characters and future UCI metacharacters are covered
+     * without having to enumerate them.
+     */
+    val FEN_CHARS = Regex("[A-Za-z0-9/ -]+")
+  }
 }
